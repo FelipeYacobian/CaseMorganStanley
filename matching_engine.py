@@ -65,3 +65,14 @@ class MatchingEngine:
                 del other_side[best_price]
 
         return trades
+
+    def print_book(self):
+        print("Ordens de Compra:")
+        for price in sorted(self.bids, reverse=True):
+            for order in self.bids[price]:
+                print(f"  {order.qty} @ {price:g}")
+
+        print("Ordens de Venda:")
+        for price in sorted(self.offers):
+            for order in self.offers[price]:
+                print(f"  {order.qty} @ {price:g}")
