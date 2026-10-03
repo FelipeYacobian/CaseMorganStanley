@@ -5,9 +5,13 @@ class MatchingEngine:
     def __init__(self):
         self.bids = {}
         self.offers = {}
+        self.next_id = 1
 
     def limit_order(self, side, price, qty):
-        order = Order("limit", side.lower(), qty, price)
+        order_id = f"identificador_{self.next_id}"   
+        self.next_id +=1
+
+        order = Order("limit", side.lower(), qty, order_id, price)
 
         trades = self.match(order)
 
@@ -23,7 +27,7 @@ class MatchingEngine:
                 
             book[order.price].append(order)
 
-        return trades    
+        return order_id, trades    
 
     def market_order(self, side, qty):
         order = Order("market", side.lower(), qty)
@@ -70,9 +74,9 @@ class MatchingEngine:
         print("Ordens de Compra:")
         for price in sorted(self.bids, reverse=True):
             for order in self.bids[price]:
-                print(f"  {order.qty} @ {price:g}")
+                print(f"  {order.qty} @ {price:g} ({order.id})")
 
         print("Ordens de Venda:")
         for price in sorted(self.offers):
             for order in self.offers[price]:
-                print(f"  {order.qty} @ {price:g}")
+                print(f"  {order.qty} @ {price:g} ({order.id})")
