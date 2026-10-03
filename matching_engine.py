@@ -34,6 +34,24 @@ class MatchingEngine:
         trades = self.match(order)
         return trades
 
+    def cancel_order(self, order_id):
+        if self.remove(self.bids, order_id):
+            return True
+        if self.remove(self.offers, order_id):
+            return True
+        return False
+
+    def remove(self, side_book, order_id):
+        for price in side_book:
+            queue = side_book[price]
+            for order in queue:
+                if order.id == order_id:
+                    queue.remove(order)
+                    if not queue:
+                        del side_book[price]
+                    return True
+        return False
+
     def match(self, order):
         trades = []
 
