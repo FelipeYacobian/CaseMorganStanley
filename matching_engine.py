@@ -7,9 +7,11 @@ class MatchingEngine:
         self.offers = {}
         self.next_id = 1
 
-    def limit_order(self, side, price, qty):
-        order_id = f"identificador_{self.next_id}"   
-        self.next_id +=1
+    def limit_order(self, side, price, qty, order_id=None):
+
+        if order_id is None:
+            order_id = f"identificador_{self.next_id}"   
+            self.next_id +=1
 
         order = Order("limit", side.lower(), qty, order_id, price)
 
@@ -41,6 +43,14 @@ class MatchingEngine:
             return True
         return False
 
+    def modify_order(self, order_id, new_price, new_qty):
+        order = self.remove(self.bids, order_id) or self.remove(self.offers, order_id)
+        if order is None:
+            return None
+
+        _, trades = self.limit_order(order.side, new_price, new_qty, order_id)
+        return trades
+
     def remove(self, side_book, order_id):
         for price in side_book:
             queue = side_book[price]
@@ -49,8 +59,8 @@ class MatchingEngine:
                     queue.remove(order)
                     if not queue:
                         del side_book[price]
-                    return True
-        return False
+                    return order      
+        return None                   
 
     def match(self, order):
         trades = []
