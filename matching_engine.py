@@ -29,17 +29,21 @@ class MatchingEngine:
                 
             book[order.price].append(order)
 
+        self.update_pegs()
         return order_id, trades    
 
     def market_order(self, side, qty):
         order = Order("market", side.lower(), qty)
         trades = self.match(order)
+        self.update_pegs()
         return trades
 
     def cancel_order(self, order_id):
         if self.remove(self.bids, order_id):
+            self.update_pegs()
             return True
         if self.remove(self.offers, order_id):
+            self.update_pegs()
             return True
         return False
 
@@ -52,7 +56,7 @@ class MatchingEngine:
         return trades
 
     def remove(self, side_book, order_id):
-        for price in side_book:
+        for price in list(side_book):
             queue = side_book[price]
             for order in queue:
                 if order.id == order_id:
@@ -108,3 +112,42 @@ class MatchingEngine:
         for price in sorted(self.offers):
             for order in self.offers[price]:
                 print(f"  {order.qty} @ {price:g} ({order.id})")
+
+    def peg_order(self, peg_type, side, qty):
+        side = side.lower()
+        if (peg_type, side) not in (("bid", "buy"), ("offer", "sell")):
+            return None
+
+        book = self.bids if side == "buy" else self.offers
+        prices = [p for p, q in book.items()
+                  if any(o.order_type == "limit" for o in q)]
+        if not prices:
+            return None
+
+        price = max(prices) if side == "buy" else min(prices)
+        order_id = f"identificador_{self.next_id}"
+        self.next_id += 1
+        book[price].append(Order("peg", side, qty, order_id, price))
+        return order_id
+
+    def update_pegs(self):
+        for book, side in ((self.bids, "buy"), (self.offers, "sell")):
+            prices = [p for p, q in book.items()
+                      if any(o.order_type == "limit" for o in q)]
+            if not prices:
+                continue
+            target = max(prices) if side == "buy" else min(prices)
+
+            moving = []
+            for price in list(book):
+                if price != target:
+                    for order in list(book[price]):
+                        if order.order_type == "peg":
+                            book[price].remove(order)
+                            moving.append(order)
+                    if not book[price]:
+                        del book[price]
+
+            for order in reversed(moving):
+                order.price = target
+                book[target].appendleft(order)
