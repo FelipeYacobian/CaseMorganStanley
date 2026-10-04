@@ -72,7 +72,7 @@ A engine aplica as regras e devolve resultados; o `main.py` lê, valida e imprim
 ## Decisões técnicas
 
 - **Livro:** dois dicionários (`bids` e `offers`) que mapeiam cada preço para uma fila (`deque`) de ordens. A fila deixa explícita a prioridade por ordem de chegada: ordens novas entram com `append` e a execução consome o início com `popleft`, ambos O(1).
-- **Melhor preço:** calculado na hora com `max` (compras) e `min` (vendas) sobre os preços do lado. Para imprimir o livro, os preços são ordenados com `sorted`.
+- **Melhor preço:** calculado na hora com `max` (compras) e `min` (vendas) sobre os preços do lado, em O(n) no número de preços. Para imprimir o livro, os preços são ordenados com `sorted`.
 - **Matching único:** limit e market usam o mesmo método de cruzamento (`match`). A diferença é que a limit para quando o preço do outro lado passa do seu limite e guarda o restante no livro, enquanto a market descarta o restante.
 - **Ids:** gerados por um contador (`identificador_1`, `identificador_2`, ...) e nunca reaproveitados.
 - **Alteração:** reaproveita a criação de limit orders, passando o id existente; por isso a ordem vai para o fim da fila.
@@ -89,7 +89,7 @@ A engine aplica as regras e devolve resultados; o `main.py` lê, valida e imprim
 
 **Prioridade:** preço primeiro (maior preço nas compras, menor nas vendas); no mesmo preço, a ordem que chegou antes é executada antes (FIFO).
 
-**Market sem liquidez suficiente:** executa o que houver disponível e descarta o restante. Market orders nunca ficam no livro, porque não têm preço.
+**Market sem liquidez suficiente:** a market executa o que houver disponível do outro lado e descarta o restante. Se o outro lado tiver menos do que o pedido (por exemplo, `market buy 100` com só 60 à venda), executa 60 e os 40 restantes são descartados. Se o outro lado estiver vazio, nenhum trade acontece e a ordem inteira é descartada, sem erro. Market orders nunca ficam no livro, porque não têm preço. O próprio exemplo do enunciado segue essa regra: o segundo `market buy 200` executa só 150.
 
 **Saída dos trades:** trades de mesmo preço gerados pela mesma ordem são somados numa única linha, como no exemplo do enunciado (`Trade, price: 20, qty: 150` para 100 + 50).
 
@@ -119,4 +119,3 @@ A engine aplica as regras e devolve resultados; o `main.py` lê, valida e imprim
 - O melhor preço é calculado com `min`/`max` sobre os preços (O(n)). Uma estrutura ordenada (heap ou árvore) manteria o melhor preço disponível diretamente.
 - Não há proteção contra erros de preço ("fat finger"); nas bolsas reais, isso é tratado com bandas de preço e circuit breakers.
 - Todos os dados ficam em memória e são perdidos ao encerrar o programa, como o enunciado permite.
-- Para sair do programa, use `exit`; Ctrl+C ou Ctrl+D encerram com uma mensagem de erro do Python.
